@@ -10,51 +10,47 @@ const Schema = mongoose.Schema
 const UserSchema = new Schema({
   name: {
     type: String,
-    default: ''
+    trim: true,
+    required: true
+  },
+  lastname: {
+    type: String,
+    trim: true,
+    required: true
   },
   email: {
     type: String, 
-    default: ''
+    trim: true,
+    lowercase: true,
+    required: true,
+    validate: [isEmail, 'Invalid username']
   },
   username: {
     type: String,
-    default: ''
+    trim: true,
+    lowercase: true,
+    required: true,
+    minlength: 5,
+    validate: [isAlphanumeric, 'Invalid username']
   },
   hashed_password: {
     type: String,
-    default: ''
+    required: true
   },
   salt: {
     type: String,
-    default: ''
+    required: true
   }
 })
 
 /**
- * Validations
+ * Complex validations
  */
 
-UserSchema.path('name').validate((name) => name.length, 'Name cannot be blank')
-
-UserSchema.path('email').validate((email) => email.length, 'Email cannot be blank')
-
-UserSchema.path('email').validate(isEmail, 'Invalid email')
-
-UserSchema.path('email').validate((email) => {
-  return new Promise(resolve => {
-    const User = mongoose.model('User')
-    if (this.isNew || this.isModified('email')) {
-      User.find({ email }).exec((err, users) => resolve(!err && !users.length))
-    } else resolve(true)
-  })
-}, 'Email `{VALUE}` already exists')
-
-UserSchema.path('username').validate((username) => username.length, 'Username cannot be blank')
-
-UserSchema.path('email').validate(isAlphanumeric, 'Invalid username')
-
 UserSchema.path('hashed_password').validate(
-  (hashed_password) => hashed_password.length && this._password.length, 'Password cannot be blank'
+  function(hashed_password){
+    return hashed_password.length, 'Password cannot be blank'
+  } 
 )
 
 /**
@@ -62,18 +58,20 @@ UserSchema.path('hashed_password').validate(
  */
 
 UserSchema.virtual('password')
-  .set((password) => {
-    this._password = password
+  .set(function(password) {
     this.salt = this.makeSalt()
+    this._password = password
     this.hashed_password = this.encryptPassword(password)
   })
-  .get(() => this._password)
+  .get(function() {
+    return this._password 
+  })
 
 /**
  * Pre-save hook
  */
 
-UserSchema.pre('save', () => {
+UserSchema.pre('save', function() {
   if (this.isNew && !this.password && this.password.length) {
     throw new Error('Invalid password')
   }
@@ -85,8 +83,6 @@ UserSchema.pre('save', () => {
 
 UserSchema.methods = {
   /**
-   * Authenticate - check passwords
-   *
    * @param {String} plainText
    * @return {Boolean}
    * @api public
@@ -97,8 +93,6 @@ UserSchema.methods = {
   },
 
   /**
-   * Make salt
-   *
    * @return {String}
    * @api public
    */
@@ -108,8 +102,6 @@ UserSchema.methods = {
   },
 
   /**
-   * Encrypt password
-   *
    * @param {String} password
    * @return {String}
    * @api public
@@ -127,3 +119,5 @@ UserSchema.methods = {
     }
   }
 }
+
+module.exports = mongoose.model('User', UserSchema)
