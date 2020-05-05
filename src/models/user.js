@@ -35,11 +35,13 @@ const UserSchema = new Schema({
   },
   hashed_password: {
     type: String,
-    required: true
+    required: true,
+    select: false
   },
   salt: {
     type: String,
-    required: true
+    required: true,
+    select: false
   }
 })
 

@@ -44,7 +44,6 @@ app.patch('/users/:id', async (req, res) => {
         if(!user) {
             res.status(404).send()
         }
-        console.log(user)
         res.send(user)
     } catch (error) {
         res.status(400).send(error)
